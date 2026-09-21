@@ -1,0 +1,87 @@
+{
+  "id": "EXP-006",
+  "name": "temporal_events",
+  "status": "complete",
+  "configuration": {
+    "optimizer": "Adam",
+    "learning_rate": 0.001,
+    "seed": 42,
+    "input_dim": 16,
+    "hidden_dim": 64,
+    "output_dim": 4,
+    "samples": 256,
+    "steps": 120,
+    "pulse_scale": 0.05,
+    "target_parameter": 0,
+    "events": {
+      "A": [40, 41],
+      "B": [40, 43],
+      "C": [40, 46],
+      "D": [40, 50]
+    }
+  },
+  "results": {
+    "normal_relative": {
+      "A": {
+        "model_l2": 0.08102205,
+        "exp_avg_l2": 0.02078163,
+        "exp_avg_sq_l2": 0.00002388
+      },
+      "B": {
+        "model_l2": 0.08284894,
+        "exp_avg_l2": 0.01975249,
+        "exp_avg_sq_l2": 0.00002019
+      },
+      "C": {
+        "model_l2": 0.08065236,
+        "exp_avg_l2": 0.02013030,
+        "exp_avg_sq_l2": 0.00001767
+      },
+      "D": {
+        "model_l2": 0.07050778,
+        "exp_avg_l2": 0.01878655,
+        "exp_avg_sq_l2": 0.00001744
+      }
+    },
+    "model_pairwise": {
+      "A_B": 0.079308,
+      "A_C": 0.078937,
+      "A_D": 0.079049,
+      "B_C": 0.074733,
+      "B_D": 0.074576,
+      "C_D": 0.077104
+    },
+    "exp_avg_pairwise": {
+      "A_B": 0.020352,
+      "A_C": 0.021468,
+      "A_D": 0.021970,
+      "B_C": 0.019625,
+      "B_D": 0.021067,
+      "C_D": 0.020521
+    },
+    "exp_avg_sq_pairwise": {
+      "A_B": 0.000021,
+      "A_C": 0.000022,
+      "A_D": 0.000023,
+      "B_C": 0.000019,
+      "B_D": 0.000021,
+      "C_D": 0.000021
+    }
+  },
+  "observations": [
+    "All temporal event patterns produce measurable differences from the normal checkpoint.",
+    "The model-weight differences are similar across events and do not provide a clear event ordering.",
+    "The exp_avg state retains a measurable fingerprint for all temporal events.",
+    "The pairwise exp_avg distances between event classes are of similar magnitude, so the four temporal patterns are not cleanly separated.",
+    "The exp_avg_sq state provides very small differences and does not provide a useful event-class signal.",
+    "The experiment uses the same pulse scale and target parameter for all events, but the underlying gradient vector changes as training progresses.",
+    "Therefore, multiplying the naturally occurring gradient by a fixed scale does not create a sufficiently controlled temporal encoding channel."
+  ],
+  "conclusion": [
+    "Adam optimizer state retains information about controlled temporal perturbations.",
+    "However, the current temporal event vocabulary does not produce sufficiently distinct optimizer-state classes for reliable hidden-message decoding.",
+    "The experiment does not establish a robust optimizer-state-only information channel.",
+    "The next experiment should replace naturally occurring gradient scaling with a fixed deterministic perturbation vector so that event magnitude and direction are controlled independently of the training trajectory."
+  ],
+  "decision": "Proceed to EXP-007 as the final mechanism experiment using deterministic perturbation vectors and repeated samples per event."
+}

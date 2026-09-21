@@ -1,0 +1,85 @@
+{
+  "id": "EXP-007",
+  "name": "controlled_temporal_events",
+  "status": "complete",
+  "configuration": {
+    "optimizer": "Adam",
+    "learning_rate": 0.001,
+    "seed": 42,
+    "input_dim": 16,
+    "hidden_dim": 64,
+    "output_dim": 4,
+    "samples": 256,
+    "steps": 120,
+    "pulse_scale": 0.01,
+    "pulse_norm": 0.32789889,
+    "target_parameter": 0,
+    "events": {
+      "A": [40, 41],
+      "B": [40, 43],
+      "C": [40, 46],
+      "D": [40, 50]
+    }
+  },
+  "results": {
+    "normal_relative_model": {
+      "A": 0.12118452,
+      "B": 0.12226212,
+      "C": 0.12209321,
+      "D": 0.12311604
+    },
+    "normal_relative_exp_avg": {
+      "A": 0.02269898,
+      "B": 0.02398164,
+      "C": 0.02309656,
+      "D": 0.02262829
+    },
+    "normal_relative_exp_avg_sq": {
+      "A": 0.00002739,
+      "B": 0.00002650,
+      "C": 0.00002612,
+      "D": 0.00002707
+    },
+    "exp_avg_pairwise": {
+      "A_B": 0.013891,
+      "A_C": 0.016170,
+      "A_D": 0.015789,
+      "B_C": 0.013015,
+      "B_D": 0.013770,
+      "C_D": 0.012796
+    },
+    "model_pairwise": {
+      "A_B": 0.040552,
+      "A_C": 0.045023,
+      "A_D": 0.044274,
+      "B_C": 0.036929,
+      "B_D": 0.040313,
+      "C_D": 0.032416
+    },
+    "exp_avg_sq_pairwise": {
+      "A_B": 0.000011,
+      "A_C": 0.000015,
+      "A_D": 0.000015,
+      "B_C": 0.000013,
+      "B_D": 0.000013,
+      "C_D": 0.000013
+    }
+  },
+  "observations": [
+    "The exact same deterministic perturbation vector is injected for every event.",
+    "The perturbation vector has identical norm across all event checkpoints.",
+    "Only the temporal positions of the perturbations differ between A, B, C, and D.",
+    "All temporal event checkpoints form a substantially tighter cluster in exp_avg space than their distances from the normal checkpoint.",
+    "Pairwise exp_avg distances between event classes are consistently measurable.",
+    "The model weights also retain information about the events, so optimizer state cannot be described as the only surviving channel.",
+    "The controlled experiment removes the natural-gradient variation that limited EXP-006.",
+    "exp_avg therefore provides a measurable training-history channel controlled by event timing."
+  ],
+  "conclusion": [
+    "A fixed deterministic perturbation injected at different training times produces distinct and persistent Adam optimizer-state fingerprints.",
+    "The result supports using optimizer-state dynamics as the information-bearing mechanism for the CTF.",
+    "The final challenge should treat model weights as a potentially informative decoy rather than claiming that weights contain no information.",
+    "The final encoding should use a larger temporal codebook and require reconstruction of training-event timing from optimizer state."
+  ],
+  "decision": "Stop mechanism experiments and proceed to the end-to-end CTF prototype using optimizer-state temporal encoding."
+}

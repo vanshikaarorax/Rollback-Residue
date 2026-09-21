@@ -1,0 +1,75 @@
+{
+  "id": "EXP-005",
+  "name": "localized_events",
+  "status": "complete",
+  "configuration": {
+    "optimizer": "Adam",
+    "learning_rate": 0.001,
+    "seed": 42,
+    "input_dim": 16,
+    "hidden_dim": 64,
+    "output_dim": 4,
+    "samples": 256,
+    "steps": 120,
+    "event_step": 40,
+    "pulse_scale": 0.5,
+    "events": {
+      "A": 0,
+      "B": 2,
+      "C": 4,
+      "D": 5
+    }
+  },
+  "results": {
+    "model": {
+      "normal_vs_A": 0.04536,
+      "normal_vs_B": 0.08034,
+      "normal_vs_C": 0.02544,
+      "normal_vs_D": 0.02015,
+      "A_vs_B": 0.08263,
+      "A_vs_C": 0.04832,
+      "A_vs_D": 0.04866,
+      "B_vs_C": 0.08113,
+      "B_vs_D": 0.08080,
+      "C_vs_D": 0.02547
+    },
+    "exp_avg": {
+      "normal_vs_A": 0.01290,
+      "normal_vs_B": 0.02032,
+      "normal_vs_C": 0.00760,
+      "normal_vs_D": 0.00790,
+      "A_vs_B": 0.01963,
+      "A_vs_C": 0.01313,
+      "A_vs_D": 0.01292,
+      "B_vs_C": 0.02018,
+      "B_vs_D": 0.02036,
+      "C_vs_D": 0.00696
+    },
+    "exp_avg_sq": {
+      "normal_vs_A": 0.00001,
+      "normal_vs_B": 0.00003,
+      "normal_vs_C": 0.00001,
+      "normal_vs_D": 0.00002,
+      "A_vs_B": 0.00003,
+      "A_vs_C": 0.00002,
+      "A_vs_D": 0.00002,
+      "B_vs_C": 0.00004,
+      "B_vs_D": 0.00003,
+      "C_vs_D": 0.00002
+    }
+  },
+  "observations": [
+    "Localized events produce measurable differences in both model weights and Adam optimizer state.",
+    "Event B produces the strongest separation from the normal checkpoint in both model weights and exp_avg.",
+    "Events C and D produce relatively similar exp_avg signatures.",
+    "Different parameter locations therefore create distinguishable optimizer-state fingerprints, but the current construction also makes the event distinguishable from model weights.",
+    "The current event vocabulary is not yet suitable for hidden-message encoding."
+  ],
+  "conclusion": [
+    "Localization successfully creates optimizer-state fingerprints.",
+    "The experiment confirms that event identity can be represented in optimizer state.",
+    "However, parameter-location encoding is too easy to identify from model weights and therefore creates a potential shortcut for a CTF solver.",
+    "A better encoding should keep the parameter location constant and encode information through the temporal structure of training events."
+  ],
+  "decision": "Proceed to EXP-006 using a single parameter group, smaller gradient perturbations, and different temporal event patterns."
+}

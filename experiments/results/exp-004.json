@@ -1,0 +1,51 @@
+{
+  "id": "EXP-004",
+  "name": "compensated_pulse",
+  "status": "complete",
+  "configuration": {
+    "optimizer": "Adam",
+    "learning_rate": 0.001,
+    "seed": 42,
+    "steps": 120,
+    "event_step": 40,
+    "compensation_step": 41,
+    "pulse_scale": 5.0,
+    "event_batch_reused": true,
+    "modes": [
+      "normal",
+      "positive",
+      "compensated"
+    ]
+  },
+  "results": {
+    "normal_vs_positive": {
+      "model_l2": 0.10927839,
+      "exp_avg_l2": 0.01612700,
+      "exp_avg_sq_l2": 0.00133027
+    },
+    "normal_vs_compensated": {
+      "model_l2": 0.13764890,
+      "exp_avg_l2": 0.02249034,
+      "exp_avg_sq_l2": 0.00261946
+    },
+    "positive_vs_compensated": {
+      "model_l2": 0.14635388,
+      "exp_avg_l2": 0.02661480,
+      "exp_avg_sq_l2": 0.00129291
+    }
+  },
+  "observations": [
+    "The positive pulse produces a measurable optimizer-state fingerprint.",
+    "The compensated pulse produces a measurable optimizer-state fingerprint.",
+    "The compensated pulse does not reduce the final model-weight difference relative to the positive pulse.",
+    "The compensated pulse increases the model-weight difference from 0.10927839 to 0.13764890.",
+    "The increase in exp_avg separation is smaller than the increase in model-weight separation.",
+    "The compensation therefore does not isolate historical information in optimizer state."
+  ],
+  "conclusion": [
+    "A simple consecutive positive/negative gradient compensation strategy does not provide the desired optimizer-state-only information channel.",
+    "The Adam optimizer's moment dynamics and parameter updates prevent the two pulses from simply cancelling in model space.",
+    "The current compensation mechanism should not be used for the final CTF."
+  ],
+  "decision": "Do not continue with simple pulse cancellation. Investigate localized and lower-amplitude training events that minimize model-weight displacement while preserving optimizer-state differences."
+}
