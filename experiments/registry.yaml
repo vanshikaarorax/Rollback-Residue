@@ -1,0 +1,44 @@
+experiments:
+  - id: EXP-001
+    name: baseline_adam_checkpoint
+    status: complete
+    hypothesis: >
+      A small CPU-only MLP can produce a deterministic checkpoint
+      containing model weights and Adam optimizer state.
+    script: src/train.py
+    artifacts:
+      - artifacts/baseline.pt
+    conclusion: >
+      Confirmed. The checkpoint contains model parameters and Adam
+      exp_avg/exp_avg_sq state for all six trainable tensors.
+    next_action: EXP-002
+
+  - id: EXP-002
+    name: gradient_pulse
+    status: complete
+    hypothesis: >
+      A controlled gradient perturbation leaves a measurable fingerprint
+      in Adam optimizer state.
+    script: src/experiments/gradient_pulse.py
+    artifacts:
+      - artifacts/pulse/normal.pt
+      - artifacts/pulse/positive.pt
+      - artifacts/pulse/negative.pt
+    conclusion: >
+      Confirmed, but the current pulse produces a stronger measurable
+      difference in final model weights than in optimizer state.
+      exp_avg shows a directional signature while exp_avg_sq is less
+      sensitive to gradient sign.
+    next_action: EXP-003
+
+  - id: EXP-003
+    name: pulse_decay
+    status: running
+    hypothesis: >
+      The optimizer state retains a measurable fingerprint of a gradient
+      event for a finite number of subsequent optimization steps.
+    script: src/experiments/pulse_decay.py
+    artifacts:
+      - artifacts/decay/
+    conclusion: null
+    next_action: null

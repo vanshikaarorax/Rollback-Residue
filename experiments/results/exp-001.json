@@ -1,0 +1,41 @@
+{
+  "id": "EXP-001",
+  "name": "baseline_adam_checkpoint",
+  "status": "complete",
+  "configuration": {
+    "optimizer": "Adam",
+    "learning_rate": 0.001,
+    "seed": 42,
+    "input_dim": 16,
+    "hidden_dim": 32,
+    "output_dim": 4,
+    "samples": 256,
+    "epochs": 20,
+    "batch_size": 32
+  },
+  "results": {
+    "optimizer": "Adam",
+    "optimizer_state_entries": 6,
+    "model_parameter_tensors": 6,
+    "optimizer_state_names": [
+      "step",
+      "exp_avg",
+      "exp_avg_sq"
+    ],
+    "final_optimizer_step": 160,
+    "checkpoint_created": true,
+    "checkpoint_path": "artifacts/baseline.pt"
+  },
+  "observations": [
+    "The checkpoint contains all six trainable model tensors.",
+    "Adam maintains optimizer state for all six trainable tensors.",
+    "Each optimizer state contains step, exp_avg, and exp_avg_sq.",
+    "The final optimizer step is 160.",
+    "The checkpoint is CPU-loadable and can be inspected without retraining."
+  ],
+  "conclusion": [
+    "A deterministic CPU-only MLP training run successfully produces a checkpoint containing both model parameters and Adam optimizer state.",
+    "The optimizer state is substantially larger and structurally different from the model weights, providing a separate artifact for subsequent forensic experiments."
+  ],
+  "decision": "Proceed to controlled optimizer-state perturbation experiments."
+}

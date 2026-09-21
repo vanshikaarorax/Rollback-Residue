@@ -1,0 +1,71 @@
+{
+  "id": "EXP-003",
+  "name": "pulse_decay",
+  "status": "complete",
+  "configuration": {
+    "optimizer": "Adam",
+    "learning_rate": 0.001,
+    "seed": 42,
+    "pulse_step": 40,
+    "pulse_scale": 5.0,
+    "observation_delays": [0, 1, 2, 5, 10, 20, 40, 80],
+    "observation_steps": [40, 41, 42, 45, 50, 60, 80, 120]
+  },
+  "results": {
+    "delay_0": {
+      "model_l2": 0.00836457,
+      "exp_avg_l2": 0.19858444,
+      "exp_avg_sq_l2": 0.00143333
+    },
+    "delay_1": {
+      "model_l2": 0.01571034,
+      "exp_avg_l2": 0.17869880,
+      "exp_avg_sq_l2": 0.00143162
+    },
+    "delay_2": {
+      "model_l2": 0.02255539,
+      "exp_avg_l2": 0.16058775,
+      "exp_avg_sq_l2": 0.00143080
+    },
+    "delay_5": {
+      "model_l2": 0.03926639,
+      "exp_avg_l2": 0.11671158,
+      "exp_avg_sq_l2": 0.00142454
+    },
+    "delay_10": {
+      "model_l2": 0.05819279,
+      "exp_avg_l2": 0.06780186,
+      "exp_avg_sq_l2": 0.00141802
+    },
+    "delay_20": {
+      "model_l2": 0.07706399,
+      "exp_avg_l2": 0.02626570,
+      "exp_avg_sq_l2": 0.00140756
+    },
+    "delay_40": {
+      "model_l2": 0.09136971,
+      "exp_avg_l2": 0.01548514,
+      "exp_avg_sq_l2": 0.00138017
+    },
+    "delay_80": {
+      "model_l2": 0.10927839,
+      "exp_avg_l2": 0.01612700,
+      "exp_avg_sq_l2": 0.00133027
+    }
+  },
+  "observations": [
+    "The gradient pulse produces a strong and measurable exp_avg fingerprint immediately after the event.",
+    "The exp_avg fingerprint decays as additional optimizer steps are performed.",
+    "A measurable exp_avg difference remains after 20, 40, and 80 subsequent steps.",
+    "The exp_avg_sq difference remains relatively stable across the tested delays.",
+    "The model-weight difference increases as more training steps occur after the pulse.",
+    "The current pulse therefore leaves a stronger long-term footprint in model weights than in exp_avg."
+  ],
+  "conclusion": [
+    "Adam exp_avg retains historical information about a controlled gradient event for many subsequent optimization steps.",
+    "The experiment confirms that optimizer state can preserve information about past training events.",
+    "However, the current single global pulse also changes the subsequent model trajectory substantially, making the event detectable from model weights.",
+    "The current mechanism is therefore not yet suitable for directly encoding a hidden message."
+  ],
+  "decision": "Proceed to EXP-004 to test whether paired or compensated gradient events can preserve an optimizer-state fingerprint while reducing the final model-weight footprint."
+}
