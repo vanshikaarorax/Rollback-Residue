@@ -1,6 +1,6 @@
-BASE_STEP = 40
-GAPS = [1, 3, 6, 10, 15, 21, 28, 36, 45, 55, 66, 78, 91, 105, 120, 136]
+CHANNEL_STEPS = [40, 50, 60, 70]
+NUM_CHANNELS = len(CHANNEL_STEPS)
+SYMBOLS = range(16)
 
-CODEBOOK = {symbol: (BASE_STEP, BASE_STEP + gap) for symbol, gap in enumerate(GAPS)}
-
-REVERSE_CODEBOOK = {timing: symbol for symbol, timing in CODEBOOK.items()}
+CODEBOOK = {symbol: tuple(CHANNEL_STEPS[i] for i in range(NUM_CHANNELS) if symbol & (1 << i)) for symbol in SYMBOLS}
+REVERSE_CODEBOOK = {events: symbol for symbol, events in CODEBOOK.items()}

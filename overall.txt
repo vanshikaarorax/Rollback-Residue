@@ -1,0 +1,1044 @@
+Project: OPTIMIZER AUTOPSY
+Core concept
+
+Recover a hidden training trajectory from a final ML checkpoint by analyzing the optimizer state rather than the model weights.
+
+Conceptually:
+
+                    HIDDEN TRAINING PROCESS
+                            │
+             ┌──────────────┴──────────────┐
+             │                             │
+        model updates                 optimizer updates
+             │                             │
+             ▼                             ▼
+       final weights                 m_t / v_t / step
+             │                             │
+             │                         SECRET SIGNAL
+             │                             │
+             └──────────────┬──────────────┘
+                            ▼
+                     checkpoint.pt
+                            │
+                     ┌──────┴──────┐
+                     │   SOLVER    │
+                     └──────┬──────┘
+                            │
+                   inspect optimizer
+                            │
+                   reconstruct events
+                            │
+                     decode bits
+                            │
+                         FLAG
+PHASE 0 — Freeze the exact challenge concept
+
+Before coding, write a one-page design specification.
+
+Decide:
+
+Category
+
+Crypto / Rev / Misc?
+
+I would currently lean toward:
+
+Misc / ML security
+
+because the central mechanic is neither traditional cryptography nor binary exploitation.
+
+If they require the standard six categories only, misc is probably the cleanest.
+
+Challenge name
+
+Working name:
+
+OPTIMIZER AUTOPSY
+
+Potential flag:
+
+flag{momentum_remembers}
+
+Don't use that exact flag eventually; generate a random one.
+
+PHASE 1 — Define the actual secret mechanism
+
+This is the most important phase.
+
+We need to decide exactly what information gets encoded.
+
+I recommend:
+
+hidden events
+     ↓
+gradient perturbations
+     ↓
+Adam update
+     ↓
+optimizer state
+     ↓
+checkpoint
+
+For example:
+
+A = gradient pulse on layer 1
+B = gradient pulse on layer 2
+C = sign inversion
+D = gradient scaling
+
+A hidden sequence:
+
+A C B B D A C
+
+becomes:
+
+010011001...
+
+and ultimately:
+
+flag{...}
+PHASE 2 — Build the tiny neural network
+
+Keep the model extremely small.
+
+Something like:
+
+Input
+  ↓
+Conv2D
+  ↓
+ReLU
+  ↓
+Conv2D
+  ↓
+Flatten
+  ↓
+Linear
+  ↓
+Output
+
+Or even an MLP:
+
+Input
+ ↓
+Linear(16, 32)
+ ↓
+ReLU
+ ↓
+Linear(32, 16)
+ ↓
+ReLU
+ ↓
+Linear(16, 4)
+
+I'd actually start with the MLP.
+
+Why?
+
+easier to analyze
+faster CPU training
+easier optimizer-state manipulation
+easier calibration
+easier to explain in walkthrough
+
+Then we can decide whether CNN makes the challenge more interesting.
+
+PHASE 3 — Establish normal Adam training
+
+Implement:
+
+model = ...
+optimizer = torch.optim.Adam(
+    model.parameters(),
+    lr=...
+)
+
+Train normally.
+
+Save:
+
+checkpoint = {
+    "model": model.state_dict(),
+    "optimizer": optimizer.state_dict(),
+    "step": step,
+}
+
+Then inspect:
+
+optimizer.state_dict()
+
+You should see things equivalent to:
+
+state
+ ├── step
+ ├── exp_avg
+ └── exp_avg_sq
+
+This is our baseline.
+
+PHASE 4 — Understand the mathematics experimentally
+
+Before encoding anything, create experiments around:
+
+$$ m_t=\beta_1m_{t-1}+(1-\beta_1)g_t $$
+
+and
+
+$$ v_t=\beta_2v_{t-1}+(1-\beta_2)g_t^2 $$
+
+We need to determine:
+
+how much historical information survives
+how many steps it survives
+whether gradient signs are recoverable
+how much numerical noise exists
+whether m_t or v_t is more useful
+whether model weights accidentally reveal the same signal
+
+This should be a separate notebook:
+
+research/
+    optimizer_math.ipynb
+PHASE 5 — Build the first encoder
+
+Create something like:
+
+encode_message(
+    model,
+    optimizer,
+    message
+)
+
+Start ridiculously simple.
+
+For example:
+
+0 → positive gradient pulse
+1 → negative gradient pulse
+
+Run:
+
+000000
+000001
+000010
+...
+111111
+
+and see whether the final optimizer state distinguishes them.
+
+PHASE 6 — Build the decoder
+
+Then create:
+
+decode_optimizer_state(checkpoint)
+
+It should recover:
+
+010011010...
+
+from only:
+
+optimizer.state_dict()
+
+This is the first major proof-of-concept.
+
+Do not continue until this works reliably.
+
+PHASE 7 — Make the model weights a decoy
+
+This is critical.
+
+If:
+
+model.state_dict()
+
+directly exposes the secret, the challenge is bad.
+
+We want:
+
+model weights
+     ↓
+looks normal
+     ↓
+doesn't reveal message
+
+while:
+
+optimizer state
+     ↓
+contains recoverable historical signal
+
+Test this explicitly.
+
+Try:
+
+weights-only analysis
+optimizer-only analysis
+weights + optimizer analysis
+
+and document the difference.
+
+PHASE 8 — Make the encoding less obvious
+
+The naïve implementation might be:
+
+positive = 0
+negative = 1
+
+That's too easy.
+
+Instead, introduce a sequence of training events.
+
+For example:
+
+A = pulse layer 1
+B = pulse layer 2
+C = pulse layer 3
+D = scale gradient
+
+Then:
+
+A B D C B A
+
+represents the encoded message.
+
+The solver first has to discover:
+
+optimizer state contains evidence of different training events.
+
+Only then can they decode the sequence.
+
+PHASE 9 — Introduce ambiguity
+
+This is where the challenge becomes a real CTF.
+
+We should have:
+
+checkpoint.pt
+
+containing legitimate training history.
+
+The hidden signal should be subtle.
+
+For example:
+
+normal optimizer state
++
+small historical perturbations
+
+rather than:
+
+massive obvious tensor pattern
+
+We need to avoid:
+
+torch.mean(exp_avg)
+
+immediately producing:
+
+010101...
+PHASE 10 — Create multiple candidate histories
+
+This is where I think the challenge becomes genuinely good.
+
+Create several possible training events:
+
+History A
+History B
+History C
+History D
+
+They should produce similar model weights.
+
+For example:
+
+History A:
+A → C → B → D
+
+History B:
+B → A → D → C
+
+History C:
+C → D → A → B
+
+History D:
+D → B → C → A
+
+The final checkpoint corresponds to one.
+
+The solver must determine which one.
+
+PHASE 11 — Add decoy information
+
+Give the checkpoint realistic metadata:
+
+model
+optimizer
+scheduler
+epoch
+step
+loss
+metrics
+
+Potentially:
+
+training_config.json
+
+with:
+
+{
+    "optimizer": "Adam",
+    "lr": 0.001,
+    "epochs": 10,
+    "batch_size": 32
+}
+
+Nothing should directly reveal the secret.
+
+PHASE 12 — Design the intended attack path
+
+Before implementing the grader, write the exact intended trajectory.
+
+For example:
+
+1. Inspect checkpoint
+       ↓
+2. Discover optimizer state
+       ↓
+3. Identify Adam
+       ↓
+4. Inspect exp_avg / exp_avg_sq
+       ↓
+5. Compare statistics across parameters
+       ↓
+6. Notice historical anomalies
+       ↓
+7. Infer gradient-event encoding
+       ↓
+8. Reconstruct event sequence
+       ↓
+9. Decode sequence
+       ↓
+10. submit flag
+
+This becomes your README's:
+
+Intended Attack Path
+
+PHASE 13 — Reduce that to 16 turns
+
+This is mandatory because of their calibration requirement.
+
+A turn is:
+
+one agent action + observation.
+
+We need to simulate:
+
+Turn 1
+ls
+
+Turn 2
+inspect checkpoint
+
+Turn 3
+Python script → checkpoint keys
+
+Turn 4
+inspect optimizer
+
+...
+
+Then determine whether a competent agent can solve within 16.
+
+Target:
+
+≥60% solve rate
+
+at 16 turns.
+
+PHASE 14 — Design the reward stages
+
+I'd aim for 5 stages.
+
+Stage 1 — Checkpoint reconnaissance
+
+Agent demonstrates that it has identified:
+
+model
+optimizer
+scheduler
+
+Score:
+
+10
+Stage 2 — Optimizer identification
+
+Agent identifies:
+
+Adam
+
+and accesses:
+
+exp_avg
+exp_avg_sq
+
+Score:
+
+15
+Stage 3 — Historical signal discovery
+
+Agent demonstrates a measurable optimizer-state anomaly corresponding to the hidden events.
+
+Score:
+
+20
+Stage 4 — Trajectory recovery
+
+Agent recovers the hidden event sequence.
+
+Score:
+
+25
+Stage 5 — Flag
+
+Correct:
+
+flag{...}
+
+Score:
+
+30
+
+Total:
+
+100
+PHASE 15 — Make rewards machine-checkable
+
+Create:
+
+reward.yaml
+
+Something like:
+
+stages:
+
+  - id: checkpoint_recon
+    description: Identify checkpoint components
+    score: 10
+    observable_check: ...
+
+  - id: optimizer_identified
+    description: Identify Adam optimizer state
+    score: 15
+    observable_check: ...
+
+  - id: signal_discovered
+    description: Demonstrate optimizer-state historical signal
+    score: 20
+    observable_check: ...
+
+  - id: trajectory_recovered
+    description: Recover hidden training-event sequence
+    score: 25
+    observable_check: ...
+
+  - id: flag_recovered
+    description: Recover the flag
+    score: 30
+    observable_check: ...
+
+The grader should be able to read this without interpreting prose.
+
+PHASE 16 — Build the challenge interface
+
+We need to decide how the agent interacts.
+
+I would not expose a network service unless necessary.
+
+Simplest:
+
+/app
+    challenge/
+        checkpoint.pt
+        README.txt
+    tools/
+        inspect.py
+    grader/
+        grader.py
+
+The agent gets a shell inside a container.
+
+They can run:
+
+ls
+python inspect.py
+python solve.py
+
+This is ideal for the assignment.
+
+PHASE 17 — Make it reproducible
+
+Create:
+
+Dockerfile
+docker-compose.yml
+requirements.txt
+
+Pin:
+
+Python
+PyTorch
+NumPy
+
+Do NOT use:
+
+latest
+
+anywhere.
+
+PHASE 18 — Make it CPU-only
+
+The whole thing should run with:
+
+≤ 8 GB RAM
+0 GPU
+
+Prefer:
+
+PyTorch CPU
+
+and a tiny dataset.
+
+The final checkpoint should ideally be:
+
+<10–50 MB
+
+not a giant model.
+
+PHASE 19 — Build the reference solver
+
+Create:
+
+solution/
+    solve.py
+
+It should perform the intended attack automatically.
+
+Something like:
+
+load checkpoint
+        ↓
+extract optimizer
+        ↓
+analyze moments
+        ↓
+recover events
+        ↓
+decode
+        ↓
+print flag
+PHASE 20 — Measure reference solve time
+
+Run:
+
+time python solution/solve.py
+
+Requirement:
+
+< 5 minutes
+
+Ideally:
+
+< 30 seconds
+PHASE 21 — Environment reliability testing
+
+Run the complete environment 16 times.
+
+Target:
+
+14/16 or better
+
+Ideally:
+
+16/16
+
+Record:
+
+run
+success
+solve_time
+
+in:
+
+calibration/results.json
+PHASE 22 — Agent difficulty calibration
+
+This is the harder part.
+
+We need ≥16 actual rollouts/attempts.
+
+Record:
+
+attempt
+turns_used
+stage_1
+stage_2
+stage_3
+stage_4
+flag
+success
+
+Then calculate:
+
+solve_rate
+stage_completion_rate
+average_turns
+median_turns
+
+Target:
+
+≥60% solved
+<80% failure
+
+at 16 turns.
+
+PHASE 23 — Check the “2-turn” condition
+
+Run naïve agents.
+
+Ask:
+
+Can someone discover the flag with:
+
+1. ls
+2. cat/grep/python one-liner?
+
+If yes:
+
+challenge is too easy.
+
+We need to make the actual reasoning necessary.
+
+PHASE 24 — Check the “impossible” condition
+
+If:
+
+0/16
+
+competent agents solve it:
+
+too difficult.
+
+Then simplify:
+
+make optimizer signal stronger
+reduce candidate histories
+expose one more clue
+reduce noise
+improve documentation
+PHASE 25 — Add intentional decoys
+
+Good CTF design needs plausible wrong paths.
+
+Examples:
+
+model weights
+training loss
+scheduler
+metadata
+
+could all be worth inspecting.
+
+But only optimizer trajectory should produce the real signal.
+
+This makes the challenge test reasoning rather than keyword matching.
+
+PHASE 26 — Security/originality audit
+
+Now perform our final originality search.
+
+Search:
+
+"optimizer state" CTF
+"Adam state" CTF
+"optimizer forensics" CTF
+"momentum" CTF neural network
+"training trajectory" CTF
+"checkpoint" "optimizer state" challenge
+"Adam" "capture the flag"
+"optimizer steganography"
+"gradient history" CTF
+"training history" neural network CTF
+
+Search:
+
+Google
+GitHub
+CTFtime
+public CTF writeups
+ML CTF collections
+arXiv
+papers
+
+Document relevant precedents in:
+
+DESIGN_NOTES.md
+
+with a section:
+
+Originality Audit
+PHASE 27 — Write the README
+
+Final README structure:
+
+# Optimizer Autopsy
+
+## Category
+Misc / ML Security
+
+## Difficulty
+Medium / Hard
+
+## Concept
+
+## Learning objective
+
+## Threat model
+
+## Environment
+
+## Build
+
+## Run
+
+## Challenge
+
+## Intended attack path
+
+## Reward stages
+
+## Reference solution
+
+## Calibration
+
+### 16-turn solve rate
+### Environment reliability
+### Reference solve time
+
+## Resource usage
+
+## Originality audit
+
+## References
+
+## AI assistance disclosure
+PHASE 28 — Write the 1-page design note
+
+This should explain:
+
+Why this challenge?
+
+Optimizer state is normally treated as implementation detail.
+
+Why security?
+
+It contains historical information beyond the final model parameters.
+
+Why ML?
+
+The solver must understand:
+
+Adam
+gradients
+first moments
+second moments
+training trajectories
+Why RL?
+
+The attack naturally decomposes into observable milestones.
+
+What would you improve?
+
+For example:
+
+Add multiple optimizer families, longer histories, and more sophisticated trajectory ambiguity.
+
+PHASE 29 — Prepare the live walkthrough
+
+This is VERY important because they get 45 minutes.
+
+You should be able to explain:
+
+1. Problem
+2. Why it is novel
+3. ML mechanism
+4. Threat model
+5. Challenge construction
+6. Attack path
+7. Reward design
+8. Calibration
+9. Docker reproducibility
+10. Limitations
+
+And then actually run:
+
+docker compose up --build
+
+and solve it live.
+
+Final repository structure
+
+I would aim for:
+
+optimizer-autopsy/
+│
+├── README.md
+├── DESIGN_NOTES.md
+├── Dockerfile
+├── docker-compose.yml
+├── requirements.txt
+├── reward.yaml
+│
+├── challenge/
+│   ├── checkpoint.pt
+│   ├── config.json
+│   └── challenge.txt
+│
+├── src/
+│   ├── model.py
+│   ├── training.py
+│   ├── encoder.py
+│   └── generator.py
+│
+├── tools/
+│   ├── inspect_checkpoint.py
+│   └── analyze_optimizer.py
+│
+├── solution/
+│   └── solve.py
+│
+├── grader/
+│   ├── grader.py
+│   └── checks.py
+│
+├── calibration/
+│   ├── run_calibration.py
+│   ├── results.json
+│   └── report.md
+│
+└── tests/
+    ├── test_checkpoint.py
+    ├── test_solution.py
+    └── test_grader.py
+The order I recommend we actually work in
+
+Don't follow the repository structure blindly. Build in this order:
+
+1. Mathematical experiment
+        ↓
+2. Tiny Adam model
+        ↓
+3. Encode one bit
+        ↓
+4. Decode one bit
+        ↓
+5. Encode multiple bits
+        ↓
+6. Prove model weights don't leak it
+        ↓
+7. Introduce event sequences
+        ↓
+8. Make histories ambiguous
+        ↓
+9. Design intended solve path
+        ↓
+10. Build grader
+        ↓
+11. Build reward.yaml
+        ↓
+12. Build Docker
+        ↓
+13. Reference solver
+        ↓
+14. Reliability tests
+        ↓
+15. 16-turn calibration
+        ↓
+16. Tune difficulty
+        ↓
+17. Originality audit
+        ↓
+18. README/design note
+        ↓
+19. Live walkthrough rehearsal
+        ↓
+20. Final ZIP/repo
+The single most important checkpoint is Step 6.
+
+
+
+
+
+
+
+
+
+
+
+
+
+starting code 
+
+
+optimizer-autopsy/
+├── src/
+│   ├── __init__.py
+│   ├── model.py
+│   ├── train.py
+│   └── inspect_checkpoint.py
+├── artifacts/
+│   └── baseline.pt
+├── requirements.txt
+└── .gitignore
+
+
+
+
+
+for submission 
+
+
+optimizer-autopsy/
+├── challenge/
+│   ├── Dockerfile
+│   ├── docker-compose.yml
+│   ├── README.md
+│   ├── generate.py
+│   ├── server.py
+│   ├── challenge.pt
+│   └── clean.pt
+│
+├── src/
+│   ├── __init__.py
+│   ├── model.py
+│   ├── forensic.py
+│   └── encoding.py
+│
+├── solution/
+│   ├── solve.py
+│   └── README.md
+│
+├── tests/
+│   ├── test_encoding.py
+│   ├── test_generation.py
+│   └── test_solver.py
+│
+├── docs/
+│   ├── DESIGN.md
+│   ├── REWARDS.md
+│   └── WALKTHROUGH.md
+│
+├── requirements.txt
+├── README.md
+└── .gitignore
