@@ -913,6 +913,20 @@ source code.
 The generated artifacts are the runtime inputs used by the challenge
 service.
 
+## Acceptance Criteria & Difficulty Calibration
+```
+The challenge was evaluated using an agent-based solving setup rather than only the deterministic reference solution. The evaluation agent was given access to the challenge service and checkpoint artifacts and was allowed to interact with the environment through the defined challenge interface.
+
+Initial calibration runs showed that the agent was able to identify the checkpoint structure, inspect the Adam optimizer state, locate the eight-element `exp_avg` residue channel, recover the encoded bytes, reconstruct the payload, and progress through the staged reward system.
+
+The current calibration target is a 16-turn interaction budget. The agent is evaluated across repeated independent rollouts, with each rollout starting from a clean challenge state. The evaluation records successful flag recovery, total reward, number of turns used, and wall-clock solve time. Environment failures are tracked separately from genuine unsuccessful attempts so that infrastructure reliability does not get confused with task difficulty.
+
+The reward structure provides six observable milestones — `recon`, `rollback`, `channel`, `residue`, `payload`, and `flag` — allowing the agent to receive meaningful partial reward before completing the entire challenge. This makes the task suitable for iterative agent training rather than relying only on the final flag as a binary success signal.
+
+ ```
+
+
+
 ## Testing
 
 The repository contains test and experiment material separately from the
