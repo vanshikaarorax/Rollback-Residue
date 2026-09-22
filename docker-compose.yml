@@ -1,0 +1,9 @@
+services:
+  challenge:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: optimizer-autopsy
+    ports:
+      - "8000:8000"
+    restart: unless-stopped

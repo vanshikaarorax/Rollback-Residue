@@ -23,6 +23,9 @@ class Submission(BaseModel):
 def challenge():
     return {"name":"Rollback-residue","category":"forensics","description":"Recover information retained in optimizer state after model rollback."}
 
+@app.get("/health")
+def health():
+    return {"status":"ok"}
 
 @app.get("/checkpoint")
 def checkpoint():
