@@ -17,4 +17,9 @@ artifacts/
 *.pth
 *.ckpt
 
+artifacts-test/
+*.pt
+*.pth
+*.ckpt
+
 .env
