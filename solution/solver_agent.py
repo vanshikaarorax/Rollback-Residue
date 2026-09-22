@@ -1,8 +1,8 @@
 
 import os
 import torch
-from src2.encoding import bits_to_byte
-from .server import submit, Submission
+from src.encoding import bits_to_byte
+from challenge.server import submit, Submission
 
 
 ARTIFACT_DIR = "artifacts"

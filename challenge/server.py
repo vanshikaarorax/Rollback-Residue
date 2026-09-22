@@ -21,7 +21,7 @@ class Submission(BaseModel):
 
 @app.get("/challenge")
 def challenge():
-    return {"name":"Optimizer Autopsy","category":"forensics","description":"Recover information retained in optimizer state after model rollback."}
+    return {"name":"Rollback-residue","category":"forensics","description":"Recover information retained in optimizer state after model rollback."}
 
 
 @app.get("/checkpoint")

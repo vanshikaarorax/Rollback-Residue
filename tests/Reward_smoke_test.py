@@ -1,8 +1,8 @@
 import json
 from pathlib import Path
 
-from src2.evaluater import Evaluator
-from src2.reward_state import RewardState
+from challenge.evaluater import Evaluator
+from challenge.reward_state import RewardState
 
 
 ROOT=Path("artifacts")

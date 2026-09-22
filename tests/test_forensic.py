@@ -1,7 +1,7 @@
 import torch
 
-from src2.forensic import train_checkpoint
-from src2.encoding import byte_to_bits
+from src.forensic import train_checkpoint
+from src.encoding import byte_to_bits
 
 
 def get_buffer_state(checkpoint):

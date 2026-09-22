@@ -1,4 +1,4 @@
-from src2.encoding import byte_to_bits, bits_to_byte
+from src.encoding import byte_to_bits, bits_to_byte
 
 
 def test_roundtrip():
