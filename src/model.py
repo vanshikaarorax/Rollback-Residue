@@ -2,7 +2,7 @@ import torch.nn as nn
 
 
 class TinyMLP(nn.Module):
-    def __init__(self, input_dim=16, hidden_dim=32, output_dim=4):
+    def __init__(self, input_dim=16, hidden_dim=64, output_dim=4):
         super().__init__()
         self.network = nn.Sequential(
             nn.Linear(input_dim, hidden_dim),

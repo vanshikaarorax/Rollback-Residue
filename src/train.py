@@ -5,7 +5,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 
-from .model import TinyMLP
+from src2.model import TinyMLP
 
 
 SEED = 42
